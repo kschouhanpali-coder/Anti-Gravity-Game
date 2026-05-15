@@ -1,11 +1,5 @@
 import streamlit as st
 import streamlit.components.v1 as components
-import http.server
-import socketserver
-import threading
-import os
-import time
-import socket
 
 # 1. PREMIUM CONFIGURATION
 st.set_page_config(
@@ -29,49 +23,25 @@ st.markdown("""
     }
     iframe {
         border: none;
+        width: 100%;
+        height: 100vh;
     }
     body {
         background-color: #050510;
+        overflow: hidden;
     }
     </style>
     """, unsafe_allow_html=True)
 
-def get_free_port():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(('', 0))
-        return s.getsockname()[1]
-
-def start_server(port, directory):
-    class Handler(http.server.SimpleHTTPRequestHandler):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, directory=directory, **kwargs)
-    
-    with socketserver.TCPServer(("", port), Handler) as httpd:
-        httpd.serve_forever()
-
-# 3. BACKGROUND SERVER LOGIC
-if 'server_port' not in st.session_state:
-    DIRECTORY = "out"
-    if os.path.exists(DIRECTORY):
-        port = get_free_port()
-        thread = threading.Thread(target=start_server, args=(port, DIRECTORY), daemon=True)
-        thread.start()
-        st.session_state.server_port = port
-        time.sleep(1)
-    else:
-        st.session_state.server_port = None
-
 def main():
-    port = st.session_state.get('server_port')
+    # URL of your deployed Next.js site on GitHub Pages
+    # This is the most reliable way to show your game in Streamlit
+    GAME_URL = "https://kschouhanpali-coder.github.io/Squarun"
     
-    if port:
-        # Full-screen iframe with no borders
-        components.iframe(f"http://localhost:{port}", height=1000)
-    else:
-        st.error("Project build folder ('out') not found.")
-        st.code("Please run: npm run build")
-        if st.button("Reload"):
-            st.rerun()
+    # Display the game in a full-screen iframe
+    components.iframe(GAME_URL, height=1000, scrolling=True)
+    
+    st.info("💡 Tip: If you see a 'Load Failed' error, make sure you have added your Supabase Secrets to GitHub Actions.")
 
 if __name__ == "__main__":
     main()
