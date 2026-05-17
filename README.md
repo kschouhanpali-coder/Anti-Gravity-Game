@@ -8,6 +8,14 @@
 
 ---
 
+## 🌐 Live Demo
+
+**👉 [Play Anti Gravity Now](https://squarun.netlify.app/)**
+
+> Runs instantly in your browser — no download or installation needed.
+
+---
+
 ## 🎮 What is Anti Gravity?
 
 **Anti Gravity** is a retro-styled, space-themed arcade game played entirely in the browser. Control a glowing ship through a neon obstacle course by inverting gravity with a single key press — `SPACE`. Survive as long as possible, rack up points, and beat your best score. Features a live leaderboard and personal dashboard to track your stats.
@@ -41,21 +49,25 @@
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - Node.js 16+
 - npm or yarn
 
 ### 1. Clone the repository
+
 ```bash
 git clone https://github.com/your-username/anti-gravity.git
 cd anti-gravity
 ```
 
 ### 2. Install dependencies
+
 ```bash
 npm install
 ```
 
 ### 3. Run the app
+
 ```bash
 npm run dev
 ```
@@ -107,6 +119,7 @@ anti-gravity/
 ## 🌐 Deployment
 
 ### Deploy on Vercel (Free)
+
 ```bash
 npm run build
 vercel deploy
