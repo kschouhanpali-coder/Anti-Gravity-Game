@@ -106,8 +106,8 @@ export default function GameEngine({ userProfile }: GameEngineProps) {
     const flipGravity = () => {
       if (gameIsOver) return;
       if (!localGameStarted) {
-        // Prevent accidental starting within 300ms of loading/resetting
-        if (performance.now() - initTime < 300) return;
+        // Prevent accidental starting within 600ms of loading/resetting
+        if (performance.now() - initTime < 600) return;
         localGameStarted = true;
         return;
       }
@@ -618,20 +618,53 @@ export default function GameEngine({ userProfile }: GameEngineProps) {
             
             <div className="flex flex-col sm:flex-row gap-6 px-4 w-full justify-center max-w-lg z-[1000] relative">
               <button 
-                onClick={handleReinitialize} 
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleReinitialize();
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleReinitialize();
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleReinitialize();
+                }}
                 className="flex-1 font-press-start text-xs bg-white text-black px-8 py-5 rounded-xl hover:bg-brand-neon-purple hover:text-white transition-all duration-300 shadow-xl pointer-events-auto relative z-50 cursor-pointer"
               >
                 RE-INITIALIZE
               </button>
               <button 
-                onClick={() => {
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   try {
                     router.push('/dashboard');
-                  } catch (e) {
-                    console.error('Next.js router push failed, using window fallback', e);
+                  } catch {
                     window.location.href = '/dashboard';
                   }
-                }} 
+                }}
+                onTouchStart={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  try {
+                    router.push('/dashboard');
+                  } catch {
+                    window.location.href = '/dashboard';
+                  }
+                }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  try {
+                    router.push('/dashboard');
+                  } catch {
+                    window.location.href = '/dashboard';
+                  }
+                }}
                 className="flex-1 font-press-start text-xs bg-black/50 text-white px-8 py-5 rounded-xl hover:bg-white/10 transition-all border border-white/10 pointer-events-auto relative z-50 cursor-pointer"
               >
                 ABORT
