@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     // Since we're doing the write from the client (in GameEngine) for this prototype, 
     // we just return success to acknowledge the valid score submission.
     return NextResponse.json({ success: true, verifiedScore: score });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

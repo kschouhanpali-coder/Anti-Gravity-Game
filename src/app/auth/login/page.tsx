@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { useAuthStore } from '@/store/authStore';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -22,8 +21,12 @@ export default function Login() {
       });
       if (signInError) throw signInError;
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Failed to login');
+    } catch (err: unknown) {
+      console.error('Login error:', err);
+      let message = 'Failed to login';
+      if (err instanceof Error) message = err.message;
+      else if (err && typeof err === 'object' && 'message' in err) message = String((err as {message: unknown}).message);
+      setError(message);
     }
   };
 
@@ -38,8 +41,8 @@ export default function Login() {
       if (error) throw error;
       // Note: with Supabase OAuth, redirection handles the flow.
       // After redirect, AuthProvider will fetch/create the profile.
-    } catch (err: any) {
-      setError(err.message || 'Google login failed');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Google login failed');
     }
   };
 

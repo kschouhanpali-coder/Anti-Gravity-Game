@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useGameStore } from '@/store/gameStore';
 import { useAuthStore } from '@/store/authStore';
 import { UserService, UserRow } from '@/services/userService';
@@ -10,17 +11,41 @@ interface GameEngineProps {
 }
 
 export default function GameEngine({ userProfile }: GameEngineProps) {
+  const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const triggerFlipRef = useRef<() => void>(null);
-  const { score, lives, level, gravityDir, setScore, setLives, setGravityDir, resetGame } = useGameStore();
+  const { score, gravityDir, setScore, setGravityDir, resetGame } = useGameStore();
   const { fetchProfile } = useAuthStore();
   const [gameOver, setGameOver] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [gameKey, setGameKey] = useState(0);
+
+  const profileRef = useRef(userProfile);
+  useEffect(() => {
+    profileRef.current = userProfile;
+  }, [userProfile]);
+
+  const handleReinitialize = () => {
+    try {
+      if (typeof document !== 'undefined' && document.activeElement) {
+        (document.activeElement as HTMLElement).blur();
+      }
+    } catch (e) {
+      console.warn('Failed to blur active element', e);
+    }
+    
+    try {
+      setGameOver(false);
+      setGameKey((prev) => prev + 1);
+    } catch (err) {
+      console.error('State reinitialization failed, falling back to page reload', err);
+      window.location.reload();
+    }
+  };
 
   useEffect(() => {
     resetGame();
-    setGameOver(false);
     
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -29,10 +54,10 @@ export default function GameEngine({ userProfile }: GameEngineProps) {
 
     let animationFrameId: number;
     let lastTime = performance.now();
+    const initTime = performance.now();
 
     // Constants
     const GRAVITY = 1800;
-    const JUMP = -650;
     const BASE_SPEED = 320;
     const MAX_FALL = 900;
     const FLIP_COOLDOWN = 300;
@@ -56,6 +81,7 @@ export default function GameEngine({ userProfile }: GameEngineProps) {
     let localScore = 0;
     let gameIsOver = false;
     let localSpeed = BASE_SPEED;
+    let localGameStarted = false;
 
     // Platforms (procedural endless)
     const platforms: {x: number, y: number, w: number, h: number, type: 'normal'|'gravity'}[] = [];
@@ -79,6 +105,12 @@ export default function GameEngine({ userProfile }: GameEngineProps) {
 
     const flipGravity = () => {
       if (gameIsOver) return;
+      if (!localGameStarted) {
+        // Prevent accidental starting within 300ms of loading/resetting
+        if (performance.now() - initTime < 300) return;
+        localGameStarted = true;
+        return;
+      }
       const now = performance.now();
       if (now - lastFlipTime > FLIP_COOLDOWN) {
         localGravityDir *= -1;
@@ -91,17 +123,24 @@ export default function GameEngine({ userProfile }: GameEngineProps) {
     // Attach to ref for UI button
     triggerFlipRef.current = flipGravity;
 
-    const handleInput = (e: KeyboardEvent | TouchEvent) => {
+    const handleInput = (e: KeyboardEvent | TouchEvent | MouseEvent) => {
       if (gameIsOver) return;
+      if (e.type === 'keydown' && (e as KeyboardEvent).repeat) return; // Prevent repeated key hold events from executing
       
       let isFlipAction = false;
       if (e.type === 'keydown' && ((e as KeyboardEvent).code === 'Space' || (e as KeyboardEvent).code === 'ArrowUp')) {
         isFlipAction = true;
+        e.preventDefault(); // Prevent spacebar scrolling page
       } else if (e.type === 'touchstart') {
         // Only trigger flip if they tap the canvas, to avoid triggering when pressing the UI button
         if ((e.target as HTMLElement).tagName === 'CANVAS') {
           isFlipAction = true;
           e.preventDefault(); // Prevent scrolling
+        }
+      } else if (e.type === 'mousedown') {
+        // Support desktop mouse click start/flip
+        if ((e.target as HTMLElement).tagName === 'CANVAS') {
+          isFlipAction = true;
         }
       }
 
@@ -112,6 +151,7 @@ export default function GameEngine({ userProfile }: GameEngineProps) {
 
     window.addEventListener('keydown', handleInput);
     window.addEventListener('touchstart', handleInput, { passive: false });
+    window.addEventListener('mousedown', handleInput);
 
     const generatePlatforms = (startX: number) => {
       let currentX = startX;
@@ -198,20 +238,22 @@ export default function GameEngine({ userProfile }: GameEngineProps) {
         floatingTexts.push({ x: player.x + 300, y: canvas.height / 2, text: 'SPEED UP!', life: 2.0 });
       }
 
-      // Update player
-      player.vx = localSpeed;
-      player.vy += GRAVITY * localGravityDir * dt;
-      if (Math.abs(player.vy) > MAX_FALL) {
-        player.vy = Math.sign(player.vy) * MAX_FALL;
+      if (localGameStarted) {
+        // Update player
+        player.vx = localSpeed;
+        player.vy += GRAVITY * localGravityDir * dt;
+        if (Math.abs(player.vy) > MAX_FALL) {
+          player.vy = Math.sign(player.vy) * MAX_FALL;
+        }
+
+        player.x += player.vx * dt;
+        player.y += player.vy * dt;
+
+        // Update trail
+        trail.push({ x: player.x, y: player.y, alpha: 0.6 });
+        if (trail.length > 15) trail.shift();
+        trail.forEach(t => t.alpha -= 0.04);
       }
-
-      player.x += player.vx * dt;
-      player.y += player.vy * dt;
-
-      // Update trail
-      trail.push({ x: player.x, y: player.y, alpha: 0.6 });
-      if (trail.length > 15) trail.shift();
-      trail.forEach(t => t.alpha -= 0.04);
 
       // Update particles
       for (let i = particles.length - 1; i >= 0; i--) {
@@ -230,83 +272,85 @@ export default function GameEngine({ userProfile }: GameEngineProps) {
         if (t.life <= 0) floatingTexts.splice(i, 1);
       }
 
-      // Update camera
-      cameraX = player.x - 100;
+      if (localGameStarted) {
+        // Update camera
+        cameraX = player.x - 100;
 
-      // Generate new chunks
-      if (platforms[platforms.length - 1].x < cameraX + canvas.width * 2) {
-        generatePlatforms(platforms[platforms.length - 1].x + platforms[platforms.length - 1].w + 100);
-      }
+        // Generate new chunks
+        if (platforms[platforms.length - 1].x < cameraX + canvas.width * 2) {
+          generatePlatforms(platforms[platforms.length - 1].x + platforms[platforms.length - 1].w + 100);
+        }
 
-      // Collision detection
-      const wasGrounded = player.isGrounded;
-      player.isGrounded = false;
-      for (const p of platforms) {
-        if (p.x < player.x + player.width &&
-            p.x + p.w > player.x &&
-            p.y < player.y + player.height &&
-            p.h + p.y > player.y) {
+        // Collision detection
+        const wasGrounded = player.isGrounded;
+        player.isGrounded = false;
+        for (const p of platforms) {
+          if (p.x < player.x + player.width &&
+              p.x + p.w > player.x &&
+              p.y < player.y + player.height &&
+              p.h + p.y > player.y) {
+              
+            // Better resolution handling for both directions
+            const overlapTop = (player.y + player.height) - p.y;
+            const overlapBottom = (p.y + p.h) - player.y;
             
-          // Better resolution handling for both directions
-          const overlapTop = (player.y + player.height) - p.y;
-          const overlapBottom = (p.y + p.h) - player.y;
-          
-          if (localGravityDir === 1) {
-            if (player.vy >= 0 && overlapTop < player.height / 2) {
-              player.y = p.y - player.height;
-              player.vy = 0;
-              player.isGrounded = true;
-              if (!wasGrounded) {
-                spawnParticles(player.x + player.width / 2, p.y, player.color, 5);
-                shakeIntensity = 2;
+            if (localGravityDir === 1) {
+              if (player.vy >= 0 && overlapTop < player.height / 2) {
+                player.y = p.y - player.height;
+                player.vy = 0;
+                player.isGrounded = true;
+                if (!wasGrounded) {
+                  spawnParticles(player.x + player.width / 2, p.y, player.color, 5);
+                  shakeIntensity = 2;
+                }
+              } else if (player.vy < 0 && overlapBottom < player.height / 2) {
+                // Hit ceiling
+                player.y = p.y + p.h;
+                player.vy = 0;
               }
-            } else if (player.vy < 0 && overlapBottom < player.height / 2) {
-              // Hit ceiling
-              player.y = p.y + p.h;
-              player.vy = 0;
-            }
-          } else {
-            if (player.vy <= 0 && overlapBottom < player.height / 2) {
-              player.y = p.y + p.h;
-              player.vy = 0;
-              player.isGrounded = true;
-              if (!wasGrounded) {
-                spawnParticles(player.x + player.width / 2, p.y + p.h, player.color, 5);
-                shakeIntensity = 2;
+            } else {
+              if (player.vy <= 0 && overlapBottom < player.height / 2) {
+                player.y = p.y + p.h;
+                player.vy = 0;
+                player.isGrounded = true;
+                if (!wasGrounded) {
+                  spawnParticles(player.x + player.width / 2, p.y + p.h, player.color, 5);
+                  shakeIntensity = 2;
+                }
+              } else if (player.vy > 0 && overlapTop < player.height / 2) {
+                // Hit floor while inverted
+                player.y = p.y - player.height;
+                player.vy = 0;
               }
-            } else if (player.vy > 0 && overlapTop < player.height / 2) {
-              // Hit floor while inverted
-              player.y = p.y - player.height;
-              player.vy = 0;
             }
           }
         }
-      }
 
-      // Coin collection
-      for (const c of coins) {
-        if (!c.collected && 
-            Math.abs(c.x - (player.x + player.width/2)) < 30 &&
-            Math.abs(c.y - (player.y + player.height/2)) < 30) {
-          c.collected = true;
-          localScore += 500;
-          setScore(localScore);
-          spawnParticles(c.x, c.y, '#FFD700', 15);
-          floatingTexts.push({ x: c.x, y: c.y, text: '+500', life: 1.0 });
-          shakeIntensity = 4;
+        // Coin collection
+        for (const c of coins) {
+          if (!c.collected && 
+              Math.abs(c.x - (player.x + player.width/2)) < 30 &&
+              Math.abs(c.y - (player.y + player.height/2)) < 30) {
+            c.collected = true;
+            localScore += 500;
+            setScore(localScore);
+            spawnParticles(c.x, c.y, '#FFD700', 15);
+            floatingTexts.push({ x: c.x, y: c.y, text: '+500', life: 1.0 });
+            shakeIntensity = 4;
+          }
         }
-      }
 
-      // Death bounds
-      if (player.y > canvas.height + 100 || player.y + player.height < -100) {
-        handleGameOver();
-        return;
-      }
-      
-      // Add score based on distance
-      if (Math.floor(player.x / 100) > Math.floor((player.x - player.vx * dt) / 100)) {
-        localScore += 10;
-        setScore(localScore);
+        // Death bounds
+        if (player.y > canvas.height + 100 || player.y + player.height < -100) {
+          handleGameOver();
+          return;
+        }
+        
+        // Add score based on distance
+        if (Math.floor(player.x / 100) > Math.floor((player.x - player.vx * dt) / 100)) {
+          localScore += 10;
+          setScore(localScore);
+        }
       }
 
       // Rendering
@@ -449,6 +493,19 @@ export default function GameEngine({ userProfile }: GameEngineProps) {
         }
       }
 
+      // Draw Start Overlay Prompt if not started yet
+      if (!localGameStarted) {
+        ctx.fillStyle = 'rgba(5, 5, 16, 0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        const pulse = Math.sin(time / 200) * 0.2 + 0.8;
+        ctx.font = 'normal 14px "Press Start 2P", monospace';
+        ctx.fillStyle = `rgba(0, 240, 255, ${pulse})`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('PRESS SPACE OR TAP TO START', canvas.width / 2, canvas.height / 2);
+      }
+
       animationFrameId = requestAnimationFrame(gameLoop);
     };
 
@@ -460,15 +517,16 @@ export default function GameEngine({ userProfile }: GameEngineProps) {
 
       // Save score
       try {
-        const newTotalRuns = (userProfile.totalRuns || 0) + 1;
-        const newHighScore = Math.max(localScore, userProfile.highScore || 0);
+        const currentProfile = profileRef.current;
+        const newTotalRuns = (currentProfile.totalRuns || 0) + 1;
+        const newHighScore = Math.max(localScore, currentProfile.highScore || 0);
         
-        await UserService.updateProfile(userProfile.uid, {
+        await UserService.updateProfile(currentProfile.uid, {
           totalRuns: newTotalRuns,
           highScore: newHighScore
         });
         
-        await fetchProfile(userProfile.uid);
+        await fetchProfile(currentProfile.uid);
       } catch (err) {
         console.error('Failed to save score', err);
       } finally {
@@ -483,10 +541,12 @@ export default function GameEngine({ userProfile }: GameEngineProps) {
     return () => {
       window.removeEventListener('keydown', handleInput);
       window.removeEventListener('touchstart', handleInput);
+      window.removeEventListener('mousedown', handleInput);
       window.removeEventListener('resize', resizeCanvas);
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameKey]);
 
   return (
     <div className="flex-1 w-full flex flex-col items-center justify-center relative p-4" ref={containerRef}>
@@ -531,7 +591,7 @@ export default function GameEngine({ userProfile }: GameEngineProps) {
 
         {/* Game Over Screen */}
         {gameOver && (
-          <div className="absolute inset-0 bg-[#050510]/90 flex flex-col items-center justify-center z-20 rounded-2xl backdrop-blur-xl border-2 border-red-500/30">
+          <div className="absolute inset-0 bg-[#050510]/95 flex flex-col items-center justify-center z-[999] pointer-events-auto rounded-2xl backdrop-blur-2xl border-2 border-red-500/30">
             <div className="relative">
               <h2 className="font-press-start text-4xl md:text-6xl text-red-500 mb-2 drop-shadow-[0_0_20px_#ef4444] text-center px-4">DEFEATED</h2>
               <div className="absolute -top-10 -right-10 opacity-20 text-8xl grayscale">👾</div>
@@ -549,27 +609,34 @@ export default function GameEngine({ userProfile }: GameEngineProps) {
               )}
             </div>
             
-            {saving ? (
-              <div className="flex flex-col items-center gap-4">
+            {saving && (
+              <div className="flex flex-col items-center gap-4 mb-6">
                 <div className="w-12 h-12 border-4 border-brand-neon-purple border-t-transparent rounded-full animate-spin"></div>
                 <p className="font-press-start text-[10px] text-gray-400 animate-pulse">UPLOADING TO NEURAL LINK...</p>
               </div>
-            ) : (
-              <div className="flex flex-col sm:flex-row gap-6 px-4 w-full justify-center max-w-lg">
-                <button 
-                  onClick={() => window.location.reload()} 
-                  className="flex-1 font-press-start text-xs bg-white text-black px-8 py-5 rounded-xl hover:bg-brand-neon-purple hover:text-white transition-all duration-300 shadow-xl"
-                >
-                  RE-INITIALIZE
-                </button>
-                <button 
-                  onClick={() => window.location.href = '/dashboard'} 
-                  className="flex-1 font-press-start text-xs bg-black/50 text-white px-8 py-5 rounded-xl hover:bg-white/10 transition-all border border-white/10"
-                >
-                  ABORT
-                </button>
-              </div>
             )}
+            
+            <div className="flex flex-col sm:flex-row gap-6 px-4 w-full justify-center max-w-lg z-[1000] relative">
+              <button 
+                onClick={handleReinitialize} 
+                className="flex-1 font-press-start text-xs bg-white text-black px-8 py-5 rounded-xl hover:bg-brand-neon-purple hover:text-white transition-all duration-300 shadow-xl pointer-events-auto relative z-50 cursor-pointer"
+              >
+                RE-INITIALIZE
+              </button>
+              <button 
+                onClick={() => {
+                  try {
+                    router.push('/dashboard');
+                  } catch (e) {
+                    console.error('Next.js router push failed, using window fallback', e);
+                    window.location.href = '/dashboard';
+                  }
+                }} 
+                className="flex-1 font-press-start text-xs bg-black/50 text-white px-8 py-5 rounded-xl hover:bg-white/10 transition-all border border-white/10 pointer-events-auto relative z-50 cursor-pointer"
+              >
+                ABORT
+              </button>
+            </div>
           </div>
         )}
       </div>

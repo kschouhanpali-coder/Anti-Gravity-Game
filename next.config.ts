@@ -1,11 +1,12 @@
 import type { NextConfig } from "next";
 
-import path from "path";
+
+const isGithubActions = process.env.GITHUB_ACTIONS || false;
 
 const nextConfig: NextConfig = {
   output: "export",
-  basePath: "/Squarun",
-  assetPrefix: "/Squarun/",
+  basePath: isGithubActions ? "/Squarun" : "",
+  assetPrefix: isGithubActions ? "/Squarun/" : "",
   turbopack: {
     root: __dirname,
   },

@@ -49,8 +49,8 @@ export default function GamePage() {
     }
   }, [loading, user, profile, profileLoading, fetchProfile, createProfile]);
 
-  // Show loading while auth or profile is resolving
-  if (loading || !user || profileLoading) {
+  // Show loading while auth or profile is resolving (only block if profile isn't already loaded)
+  if (loading || !user || (profileLoading && !profile)) {
     return (
       <div className="min-h-screen bg-brand-bg flex flex-col items-center justify-center gap-4">
         <div className="w-10 h-10 border-4 border-brand-neon-purple border-t-transparent rounded-full animate-spin" />

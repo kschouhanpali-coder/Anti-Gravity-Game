@@ -44,8 +44,13 @@ export default function Register() {
       });
       
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Registration failed');
+    } catch (err: unknown) {
+      console.error('Registration error:', err);
+      let message = 'Registration failed';
+      if (err instanceof Error) message = err.message;
+      else if (err && typeof err === 'object' && 'message' in err) message = String((err as {message: unknown}).message);
+      else if (err && typeof err === 'object' && 'error_description' in err) message = String((err as {error_description: unknown}).error_description);
+      setError(message);
     } finally {
       setLoading(false);
     }
