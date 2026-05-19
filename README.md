@@ -5,7 +5,7 @@
 ![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 ---
 ## 🌐 Live Demo
-**👉 [Play Anti Gravity Now](https://squarun.netlify.app/)**
+**👉 [Play Anti Gravity Now](https://squaruns.netlify.app/)**
 > Runs instantly in your browser — no download or installation needed.
 ---
 ## 🎮 What is Anti Gravity?
