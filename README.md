@@ -9,7 +9,6 @@ A fast-paced, browser-based arcade game where a single key press inverts gravity
 [![Live Demo](https://img.shields.io/badge/🎮_Live_Demo-Play_Now-9D4EDD?style=for-the-badge)](https://squaruns.netlify.app/)
 ![Status](https://img.shields.io/badge/status-live-brightgreen?style=flat-square)
 ![React](https://img.shields.io/badge/Built%20with-React-61DAFB?style=flat-square&logo=react&logoColor=black)
-![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)
 
 </div>
 
@@ -27,7 +26,6 @@ A fast-paced, browser-based arcade game where a single key press inverts gravity
 - [Project Structure](#️-project-structure)
 - [Deployment](#-deployment)
 - [Contributing](#-contributing)
-- [License](#-license)
 
 ---
 
@@ -179,17 +177,3 @@ Pull requests are welcome! For major changes, please open an issue first to disc
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a pull request
-
----
-
-## 📄 License
-
-Distributed under the **MIT License**. © 2026 Anti Gravity.
-
----
-
-<div align="center">
-
-**Built with ❤️ for arcade game lovers — Anti Gravity**
-
-</div>
