@@ -157,14 +157,14 @@ anti-gravity/
 
 ## ☁️ Deployment
 
-**Deploy on Vercel (Free):**
+**Deploy on Netlify (Free):**
 
 ```bash
 npm run build
-vercel deploy
+netlify deploy --prod
 ```
 
-Or connect your GitHub repo directly on [vercel.com](https://vercel.com) — it auto-deploys on every push. 🚀
+Or connect your GitHub repo directly on [netlify.com](https://netlify.com) — it auto-deploys on every push. 🚀
 
 ---
 
