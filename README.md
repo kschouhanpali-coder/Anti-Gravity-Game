@@ -1,4 +1,4 @@
-<div align="center">
+<div align="center" id="top">
 
 # 🚀 Anti Gravity
 
@@ -26,6 +26,7 @@ A fast-paced, browser-based arcade game where a single key press inverts gravity
 - [Project Structure](#️-project-structure)
 - [Deployment](#-deployment)
 - [Contributing](#-contributing)
+- [Credits & Contact](#-credits--contact)
 
 ---
 
@@ -177,3 +178,43 @@ Pull requests are welcome! For major changes, please open an issue first to disc
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a pull request
+
+---
+
+## 👤 Credits & Contact
+
+<div align="center">
+
+🚀
+
+### Built by [Your Name](https://github.com/your-username)
+
+*"Flip gravity. Dodge the void. Chase the high score."*
+
+</div>
+
+<br/>
+
+> 📬 **Get in touch** — reach out on [GitHub](https://github.com/your-username), [X / Twitter](https://twitter.com/your-username), or via [email](mailto:you@example.com).
+>
+> 🐛 **Found a bug?** [Open an issue](https://github.com/your-username/anti-gravity/issues) and I'll take a look.
+>
+> 💡 **Have an idea for a new obstacle or feature?** [Start a discussion](https://github.com/your-username/anti-gravity/discussions) — I'd love to hear it.
+>
+> ⭐ **Enjoying Anti Gravity?** A star on the repo helps other players find it too.
+
+<br/>
+
+Anti Gravity is built with **React** and **JavaScript**, styled with a hand-crafted dark neon **CSS** theme, and routed with **React Router**.
+
+<div align="center">
+
+<br/>
+
+<sub>⭐ If you had fun chasing the high score, consider giving it a star.</sub>
+
+<br/>
+
+**[⬆ Back to top](#top)**
+
+</div>
